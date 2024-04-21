@@ -1,0 +1,385 @@
+{
+	"info": {
+		"_postman_id": "e5067236-7f20-4a5a-bfb1-4e8b32e3564b",
+		"name": "DocuSign",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "25502468"
+	},
+	"item": [
+		{
+			"name": "Dev Environment",
+			"item": [
+				{
+					"name": "1. Consent Url",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"response_type\": \"code\",\r\n    \"scope\": \"signature\",\r\n    \"client_id\": \"{{integrationKey}}\",\r\n    \"redirect_uri\": \"{{redirectUri}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{devBaseUrl}}/oauth/auth?response_type=code&scope=signature&client_id={{integrationKey}}&redirect_uri={{redirectUri}}",
+							"host": [
+								"{{devBaseUrl}}"
+							],
+							"path": [
+								"oauth",
+								"auth"
+							],
+							"query": [
+								{
+									"key": "response_type",
+									"value": "code"
+								},
+								{
+									"key": "scope",
+									"value": "signature"
+								},
+								{
+									"key": "client_id",
+									"value": "{{integrationKey}}"
+								},
+								{
+									"key": "redirect_uri",
+									"value": "{{redirectUri}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Obtain Access Token",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var encodedIntegrationSecret = btoa(pm.collectionVariables.get('integrationKey')+':'+pm.collectionVariables.get('secretKey'));\r",
+									"\r",
+									"pm.collectionVariables.set(\"encodedAuthorization\", \"Basic \" + encodedIntegrationSecret);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set(\"accessToken\", JSON.parse(responseBody).access_token);\r",
+									"pm.collectionVariables.set(\"refreshToken\", JSON.parse(responseBody).refresh_token);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{encodedAuthorization}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"grant_type\": \"authorization_code\",\r\n    \"code\": \"{{authCodeFromConsentUrl}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{devBaseUrl}}/oauth/token",
+							"host": [
+								"{{devBaseUrl}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Getting user info",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set(\"baseUri\", JSON.parse(responseBody).accounts[0].base_uri);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{encodedAuthorization}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{devBaseUrl}}/oauth/userinfo",
+							"host": [
+								"{{devBaseUrl}}"
+							],
+							"path": [
+								"oauth",
+								"userinfo"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Refresh Token",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set(\"accessToken\", JSON.parse(responseBody).access_token);\r",
+									"pm.collectionVariables.set(\"refreshToken\", JSON.parse(responseBody).refresh_token);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{encodedAuthorization}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"grant_type\": \"refresh_token\",\r\n    \"refresh_token\": \"{{refreshToken}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{devBaseUrl}}/oauth/token",
+							"host": [
+								"{{devBaseUrl}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Create Envelope",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"grant_type\": \"refresh_token\",\r\n    \"refresh_token\": \"{{refreshToken}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUri}}/restapi/v2.1/accounts/{{accountId}}/envelopes",
+							"host": [
+								"{{baseUri}}"
+							],
+							"path": [
+								"restapi",
+								"v2.1",
+								"accounts",
+								"{{accountId}}",
+								"envelopes"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Production Environment",
+			"item": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "authCodeFromConsentUrl",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "devBaseUrl",
+			"value": "https://account-d.docusign.com",
+			"type": "string"
+		},
+		{
+			"key": "prodBaseUrl",
+			"value": "https://account.docusign.com",
+			"type": "string"
+		},
+		{
+			"key": "integrationKey",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "secretKey",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "encodedAuthorization",
+			"value": "Basic (Base64Encoded(integrationKey:secretKey))",
+			"type": "string"
+		},
+		{
+			"key": "accountId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "redirectUri",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "baseUri",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
